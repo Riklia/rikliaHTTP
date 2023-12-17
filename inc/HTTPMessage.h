@@ -23,6 +23,7 @@ public:
     std::string getStartLine() const { return startLine; }
 
     void addHeader(const std::string& key, const std::string& value) { headers[key] = value; }
+    void removeHeader(const std::string& key);
     std::string getHeader(const std::string& key) const
 	{
         auto it = headers.find(key);
