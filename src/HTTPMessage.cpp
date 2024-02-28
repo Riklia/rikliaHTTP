@@ -35,3 +35,11 @@ std::string HTTPMessage::toString() const {
 	message += body;
 	return message;
 }
+
+void HTTPMessage::removeHeader(const std::string& key)
+{
+	auto it = headers.find(key);
+	if (it != headers.end()) {
+		headers.erase(it);
+	}
+}

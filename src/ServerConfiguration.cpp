@@ -47,7 +47,7 @@ std::unordered_map<std::string, ServerConfig> ServerConfig::parseConfigurationFi
         {
             std::string maxFileSizeStr;
             iss >> maxFileSizeStr;
-            int maxSize = std::stoi(maxFileSizeStr.c_str());
+            int maxSize = std::stoi(maxFileSizeStr);
             if (maxSize > 0) currentServer.maxFileSize = maxSize;
         }
         else if (keyword == "location") 

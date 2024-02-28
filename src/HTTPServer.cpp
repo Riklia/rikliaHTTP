@@ -253,48 +253,50 @@ void HTTPServer::rangeHandler(const HTTPRequest& request, HTTPResponse& response
     std::string rangeHeader = request.getHeader("Range");
     if (rangeHeader.empty()) return;
     const size_t posDash = rangeHeader.find('-');
-    if (posDash != std::string::npos)
+    if (posDash == std::string::npos)
     {
-        size_t bytesPrefixPos = rangeHeader.find("bytes=");
-        if (bytesPrefixPos == std::string::npos) 
+        handleErrorCode(response, 416);
+        return;
+    }
+    size_t bytesPrefixPos = rangeHeader.find("bytes=");
+    if (bytesPrefixPos == std::string::npos) 
+    {
+        handleErrorCode(response, 416);
+        return;
+    }
+
+    std::string startStr = rangeHeader.substr(6, posDash - 6);
+    std::string endStr = rangeHeader.substr(posDash + 1);
+
+    try
+    {
+        const std::string responseBody = response.getBody();
+        size_t start, end;
+        if (startStr.empty() && !endStr.empty())
         {
-            handleErrorCode(response, 416);
-            return;
+            end = std::stoull(endStr);
+            start = (end >= responseBody.size()) ? 0 : responseBody.size() - end;
+
+            startStr = std::to_string(start);
         }
+        start = std::stoull(startStr);
+        end = (endStr.empty()) ? 0 : std::stoull(endStr);
 
-        std::string startStr = rangeHeader.substr(6, posDash - 6);
-        std::string endStr = rangeHeader.substr(posDash + 1);
+        end = (end == 0 || end >= responseBody.size()) ? responseBody.size() - 1 : end;
 
-        try
-        {
-            const std::string responseBody = response.getBody();
-            size_t start, end;
-            if (startStr.empty() && !endStr.empty())
-            {
-                end = std::stoull(endStr);
-                start = (end >= responseBody.size()) ? 0 : responseBody.size() - end;
+        std::ostringstream contentRange;
+        contentRange << "bytes " << start << "-" << end << "/" << responseBody.size();
+        response.addHeader("Content-Range", contentRange.str());
 
-                startStr = std::to_string(start);
-            }
-            start = std::stoull(startStr);
-            end = (endStr.empty()) ? 0 : std::stoull(endStr);
-
-            end = (end == 0 || end >= responseBody.size()) ? responseBody.size() - 1 : end;
-
-            std::ostringstream contentRange;
-            contentRange << "bytes " << start << "-" << end << "/" << responseBody.size();
-            response.addHeader("Content-Range", contentRange.str());
-
-            response.setStatusCode(206);
-            const size_t contentLength = end - start + 1;
-            const std::string partialContent = responseBody.substr(start, contentLength);
-            response.setBody(partialContent);
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << "Error parsing range values: " << e.what() << std::endl;
-            handleErrorCode(response, 416);
-        }
+        response.setStatusCode(206);
+        const size_t contentLength = end - start + 1;
+        const std::string partialContent = responseBody.substr(start, contentLength);
+        response.setBody(partialContent);
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Error parsing range values: " << e.what() << std::endl;
+        handleErrorCode(response, 416);
     }
 }
 
@@ -302,3 +304,4 @@ void HTTPServer::callLog(logPriority priority, const std::string message)
 {
     serverLogger.log(priority, message);
 }
+

@@ -153,6 +153,5 @@ bool file_utils::deleteFile(std::string filePath)
         return false;
     }
 	return true;
-    
 }
 

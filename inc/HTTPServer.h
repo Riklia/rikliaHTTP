@@ -37,3 +37,4 @@ private:
 	void rangeHandler(const HTTPRequest& request, HTTPResponse& response);
 	void callLog(logPriority priority, const std::string message) override;
 };
+

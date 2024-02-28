@@ -58,11 +58,22 @@ void ServerLogger::log(logPriority priority, std::string message)
                 std::string newLogFileName = file_utils::getDirectory(logfile) + "/" + file_utils::getFilenameWithoutExtension(logfile);
                 std::string logFileExtension = file_utils::getExtension(logfile);
                 newLogFileName += "_" + string_utils::getCurrentTimestampForFilename() + "." + logFileExtension;
-                std::filesystem::rename(logfile, newLogFileName);
-                file_utils::compressFileToGz(newLogFileName);
-                file_utils::deleteFile(newLogFileName);
-                std::ofstream newFile(logfile, std::ios_base::app);
-                newFile.close();
+
+                std::error_code checkError;
+                std::filesystem::rename(logfile, newLogFileName, checkError);
+
+				if (checkError)
+                {
+                    std::cout << "Could not rename log file - continue writing to the file";
+                    std::cout << "Error details: " << checkError.message();
+                }
+                else
+                {
+                    file_utils::compressFileToGz(newLogFileName);
+                    file_utils::deleteFile(newLogFileName);
+                    std::ofstream newFile(logfile, std::ios_base::app);
+                    newFile.close();
+                }
             }
             std::ofstream file(logfile, std::ios_base::app);
             switch (priority) {

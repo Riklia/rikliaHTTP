@@ -100,12 +100,15 @@ int TCPServer::receiveResponse(std::string& rawMessage, int socket, timeval time
 		callLog(ErrorP, errorMessage);
 		return -1;
 	}
-
 	while ((bytesRead = recv(socket, buffer, sizeof(buffer) - 1, 0)) > 0) {
 		buffer[bytesRead] = '\0';
-		rawMessage += buffer;
+		std::string receivedString = std::string(buffer, bytesRead);
+		rawMessage += receivedString;
 		size_t contentLength = std::atoi(string_utils::getHeaderValue(rawMessage, "Content-Length").c_str());
-		if (contentLength > 0 && rawMessage.length() >= contentLength) {
+		const std::string emptyLine = "\r\n\r\n";
+		size_t bodyStartPosition = rawMessage.find(emptyLine);
+		size_t bodyLengthSoFar = (bodyStartPosition == std::string::npos) ? 0 : (rawMessage.length() - (bodyStartPosition + emptyLine.length()));
+		if (contentLength > 0 && bodyLengthSoFar >= contentLength) {
 			break;
 		}
 	}
@@ -121,6 +124,9 @@ int TCPServer::receiveResponse(std::string& rawMessage, int socket, timeval time
 			return -1;
 		}
 	}
+
+	callLog(DebugP, "Received: ");
+	callLog(DebugP, rawMessage);
 
 	return 0;
 }
